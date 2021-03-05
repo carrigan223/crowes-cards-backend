@@ -104,4 +104,30 @@ module.exports = {
 
     return { id: session.id };
   },
+
+  /**
+   * Given a checkout_session, verifies payment and updates the order
+   * @param {any} ctx
+   */
+
+  async confirm(ctx) {
+    const { checkout_session } = ctx.request.body;
+
+    const session = await stripe.checkout.sessions.retrieve(checkout_session);
+
+    if (session.payment_status === "paid") {
+      const updateOrder = await strapi.services.order.update(
+        {
+          checkout_session,
+        },
+        {
+          status: "paid",
+        }
+      );
+
+      return sanitizeEntity(updateOrder, { model: strapi.models.order });
+    } else {
+      ctx.throw(400, "The Payment Wasnt Succseful, Please Contact Support");
+    }
+  },
 };
